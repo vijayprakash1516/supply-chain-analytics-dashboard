@@ -1,56 +1,72 @@
-# Supply Chain Analytics Project — Starter Package
+# Supply Chain Analytics Dashboard
 
-## Source
-DataCo Smart Supply Chain dataset (Constante, Silva, Pereira — 2019, Mendeley Data).
-180,519 order-item records, 2015-01 to 2017-09, across 5 markets / 23 regions.
+SQL, Excel, and Power BI analysis of a 180,519-row supply chain dataset — five
+business questions, answered and cross-validated across all three tools.
 
-## Files
-- `supply_chain_cleaned.csv` — cleaned dataset (PII columns removed, dates parsed,
-  `shipping_delay_days` derived column added). This is the file loaded into MySQL,
-  and the same file to import into Excel and Power BI.
-- `queries.sql` — the 5 core queries answering the business questions below,
-  written in MySQL syntax (backtick-quoted column names).
+## Dataset
 
-## Database setup (MySQL Workbench)
-1. Schema: `supply_chain`
-2. Table: `orders` — created via Table Data Import Wizard, then loaded properly
-   using `LOAD DATA INFILE` (the wizard alone is unreliable on large CSVs — it
-   silently stopped at 356 rows before the full load was done correctly).
-3. The CSV has a few rows with missing `Customer Zipcode` values, which trips
-   MySQL's strict mode by default. Fix applied: `SET SESSION sql_mode = '';`
-   before running the load, so those few rows load with a null zip code instead
-   of aborting the whole import.
-4. Full load command used:
-   ```sql
-   LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/supply_chain_cleaned.csv'
-   INTO TABLE supply_chain.orders
-   FIELDS TERMINATED BY ','
-   ENCLOSED BY '"'
-   LINES TERMINATED BY '\n'
-   IGNORE 1 ROWS;
-   ```
-5. Verified row count: `SELECT COUNT(*) FROM supply_chain.orders;` → 180519
+DataCo Smart Supply Chain dataset (Constante, Silva, Pereira — 2019, Mendeley
+Data). 180,519 order-item records, Jan 2015 – Jan 2018, across 5 markets / 23
+regions. `sample_data_first_500_rows.csv` in this repo is a small sample for
+quick inspection — the full dataset is publicly available on Mendeley Data /
+Kaggle under the same name.
 
-## Business Questions (Q1-Q5)
-1. Does a faster shipping mode actually deliver more reliably?
-2. Do top-revenue product categories also drive the most profit?
-3. Which regions combine high late-delivery risk with low profit margin?
-4. How do order volume and profit trend over 2015-2017?
-5. Does discounting correlate with higher sales volume or profit ratio?
+## Tools and files in this repo
 
-## Key findings so far (from the SQL layer)
-- First Class shipments are late 95.3% of the time vs 38.1% for Standard Class —
-  shipping mode is a far stronger predictor of lateness than region or market.
-- Regional late-delivery rates are comparatively flat (55-58% across the worst regions).
-- Top-revenue categories (Fishing, Cleats, Camping & Hiking) all sit in a narrow
-  10-11% profit margin band — no major revenue/profit mismatch among leaders.
-- Discount rate has ~zero correlation with profit ratio or average order value —
-  discounting isn't clearly moving the needle either way.
+| Tool | File(s) | What it does |
+|---|---|---|
+| **SQL** (MySQL) | `queries.sql` | Full query layer answering all 5 questions |
+| **Excel** | `Supply_Chain_Dashboard_GitHub.xlsx` | Pivot tables + charts, one sheet per question |
+| **Power BI** | Dashboard PDF export | Interactive dashboard: 4 KPI cards + 5 linked visuals |
+| **Documentation** | `project_log.md` / `project_log.pdf` | Full step-by-step reasoning, SQL, results, and conclusions for every question |
 
-## Next steps
-1. Finish writing and running Q1-Q5 in MySQL Workbench (in progress).
-2. Import `supply_chain_cleaned.csv` into Excel. Build pivot tables for the ABC
-   analysis (category/vendor revenue contribution) and a shipping-mode scorecard.
-3. Import the same CSV into Power BI. Build the shipping-mode reliability visual
-   as your headline chart — it's the strongest, most specific finding.
-4. Write the 1-page insight summary once your visuals are built.
+## The five business questions and headline findings
+
+**1. Does a faster shipping mode actually deliver more reliably?**
+First Class shipments are late 95.3% of the time vs. 38.1% for Standard
+Class. Root cause: 100% of First Class orders are scheduled for a 1-day
+delivery window — the promise itself is unrealistic, not a fulfillment
+failure.
+
+**2. Do top-revenue product categories also drive the most profit?**
+Top 15 categories by revenue sit at a flat ~10-13% margin. A few smaller
+categories (Golf Bags & Carts, Soccer, Fitness Accessories) show noticeably
+higher margins (~15-17%) — worth investigating for a replicable cost/pricing
+structure.
+
+**3. Which regions combine high late-delivery risk with low profit margin?**
+Neither metric varies much by region (48-58% late rate, 10-13% margin across
+all ~23 regions) — region is not a major driver of either problem, which
+reinforces that shipping mode (Q1) and category (Q2) are the real levers.
+
+**4. How do order volume and profit trend over 2015-2017?**
+Order volume is stable (~4,800-5,400/month) from Jan 2015 through Sep 2017.
+The final four months of the dataset (Oct 2017 - Jan 2018) were investigated
+and excluded as a likely data-completeness issue rather than a real business
+decline — confirmed via a min/max date check and unstable profit-per-order in
+that window.
+
+**5. Does discounting correlate with higher sales volume or profit ratio?**
+Average order value stays flat (~₹203-204) regardless of discount rate —
+discounting does not drive bigger orders. Profit margin declines steadily
+from ~13% (no discount) to ~9% (20%+ discount). Tested for correlation vs.
+causation by isolating individual categories — the pattern holds cleanly for
+high-volume categories and gets noisy for low-volume ones due to small
+sample sizes per discount bucket.
+
+## Process notes worth mentioning
+
+Every finding above was independently reproduced in SQL, Excel, and Power
+BI — not just calculated once and assumed correct. A few real issues were
+hit and fixed along the way (documented in full in `project_log.md`):
+- A bulk CSV load into MySQL that silently failed at 356 rows before being
+  fixed with a proper `LOAD DATA INFILE` command
+- Columns misread as text instead of numbers in both Excel and Power BI,
+  caught via type-checking before trusting any calculation
+- A data-completeness anomaly in the final 4 months of the dataset, tested
+  and confirmed rather than assumed
+
+## Full write-up
+
+See `project_log.md` (or the PDF) for the complete reasoning behind every
+query, every chart, and every conclusion above.
